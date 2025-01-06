@@ -90,6 +90,12 @@ public:
    */
   bool setToolVoltage(const ToolVoltage voltage);
 
+  /// @brief Apply force mode params
+  /// @param[in] damping_factor Damping factor
+  /// @param[in] gain_scaling_factor Gain scaling factor
+  /// @return True, if the write was performed successfully, false otherwise.
+  bool applyForceModeParams(double damping_factor, double gain_scaling_factor);
+
   /*!
    * \brief Set robot to be controlled in force mode.
    *
@@ -177,13 +183,14 @@ private:
   enum class ScriptCommand : int32_t
   {
 
-    ZERO_FTSENSOR = 0,       ///< Zero force torque sensor
-    SET_PAYLOAD = 1,         ///< Set payload
-    SET_TOOL_VOLTAGE = 2,    ///< Set tool voltage
-    START_FORCE_MODE = 3,    ///< Start force mode
-    END_FORCE_MODE = 4,      ///< End force mode
-    START_TOOL_CONTACT = 5,  ///< Start detecting tool contact
-    END_TOOL_CONTACT = 6,    ///< End detecting tool contact
+    ZERO_FTSENSOR = 0,        ///< Zero force torque sensor
+    SET_PAYLOAD = 1,          ///< Set payload
+    SET_TOOL_VOLTAGE = 2,     ///< Set tool voltage
+    START_FORCE_MODE = 3,     ///< Start force mode
+    END_FORCE_MODE = 4,       ///< End force mode
+    START_TOOL_CONTACT = 5,   ///< Start detecting tool contact
+    END_TOOL_CONTACT = 6,     ///< End detecting tool contact
+    SET_FORCE_MODE_PARAMS = 7 ///< Set force mode params
   };
 
   bool client_connected_;

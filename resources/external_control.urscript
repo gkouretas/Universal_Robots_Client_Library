@@ -781,7 +781,7 @@ while control_mode > MODE_STOPPED:
           feature = p[0, 0, 0, 0, 0, 0] # Default
 
         freedrive_mode(freeAxes, feature)
-        # TODO: allow for updating of freedrive axes/feature outside of start
+        # TODO(george): allow for updating of freedrive axes/feature outside of start
       elif params_mult[2] == FREEDRIVE_MODE_STOP:
         textmsg("Leaving freedrive mode")
         end_freedrive_mode()

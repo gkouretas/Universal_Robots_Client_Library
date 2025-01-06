@@ -138,7 +138,7 @@ public:
       static constexpr size_t bufsize_ = 7;
 
       // Static assert that our bufsize is not too big
-      // TODO: should there be a declaration elsewhere for the 4 (represents # of additional dwords required)
+      // TODO(george): should there be a declaration elsewhere for the 4 (represents # of additional dwords required)
       static_assert(bufsize_ <= MAX_MESSAGE_LENGTH - 4, "Feature buffer is too large");
 
       // Allocate buffer
@@ -166,7 +166,7 @@ public:
       }
       else
       {
-        std::free(out); // TODO: needed?
+        std::free(out); // TODO(george): needed?
         assert(false && "Undefined behavior");
       }
 
