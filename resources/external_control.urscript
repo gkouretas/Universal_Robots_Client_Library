@@ -26,7 +26,7 @@ MODE_POSE = 5
 MODE_FREEDRIVE = 6
 MODE_TOOL_IN_CONTACT = 7
 # Data dimensions of the message received on the reverse interface
-REVERSE_INTERFACE_DATA_DIMENSION = 8
+REVERSE_INTERFACE_DATA_DIMENSION = 11
 
 TRAJECTORY_MODE_RECEIVE = 1
 TRAJECTORY_MODE_CANCEL = -1
@@ -51,6 +51,9 @@ SCRIPT_COMMAND_DATA_DIMENSION = 28
 
 FREEDRIVE_MODE_START = 1
 FREEDRIVE_MODE_STOP = -1
+FREEDRIVE_FEATURE_CUSTOM_VECTOR = 0
+FREEDRIVE_FEATURE_BASE = 1
+FREEDRIVE_FEATURE_TOOL = 2
 
 UNTIL_TOOL_CONTACT_RESULT_SUCCESS = 0
 UNTIL_TOOL_CONTACT_RESULT_CANCELED = 1
@@ -758,7 +761,27 @@ while control_mode > MODE_STOPPED:
     elif control_mode == MODE_FREEDRIVE:
       if params_mult[2] == FREEDRIVE_MODE_START:
         textmsg("Entering freedrive mode")
-        freedrive_mode()
+        
+        # Set freeAxes array
+        freeAxes = integer_to_binary_list(params_mult[3]) # Convert int32 to list of binary elements
+        freeAxes = [freeAxes[0], freeAxes[1], freeAxes[2], freeAxes[3], freeAxes[4], freeAxes[5]] # Truncate list to 6 elements
+        
+        # Determine the feature
+        if params_mult[4] == FREEDRIVE_FEATURE_CUSTOM_VECTOR:
+          # Custom vector from params, read them
+          feature = p[params_mult[5] / MULT_jointstate, params_mult[6] / MULT_jointstate, params_mult[7] / MULT_jointstate, params_mult[8] / MULT_jointstate, params_mult[9] / MULT_jointstate, params_mult[10] / MULT_jointstate]
+        elif params_mult[4] == FREEDRIVE_FEATURE_BASE:
+          # Desired feature is the base
+          feature = "base"
+        elif params_mult[4] == FREEDRIVE_FEATURE_TOOL:
+          # Desired feature is the tool
+          feature = "tool"
+        else:
+          textmsg("Unknown feature, using default value")
+          feature = p[0, 0, 0, 0, 0, 0] # Default
+
+        freedrive_mode(freeAxes, feature)
+        # TODO: allow for updating of freedrive axes/feature outside of start
       elif params_mult[2] == FREEDRIVE_MODE_STOP:
         textmsg("Leaving freedrive mode")
         end_freedrive_mode()

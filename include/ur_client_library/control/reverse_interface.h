@@ -34,9 +34,12 @@
 #include "ur_client_library/types.h"
 #include "ur_client_library/log.h"
 #include "ur_client_library/ur/robot_receive_timeout.h"
+#include <math.h>
 #include <cstring>
+#include <cassert>
 #include <endian.h>
 #include <condition_variable>
+#include <optional>
 
 namespace urcl
 {
@@ -70,6 +73,114 @@ class ReverseInterface
 {
 public:
   static const int32_t MULT_JOINTSTATE = 1000000;
+
+  /*!
+  * \brief Container for binary list of enabling/disabling axes for freedrive mode
+  */
+  class FreeAxes
+  {
+  public:
+    /// @brief FreeAxes constructor
+    /// @note The default configuration of this constructor is consistent with the default 
+    /// freedrive `freeAxes` variable
+    /// @param[in] vec boolean array of length=6
+    FreeAxes(const std::array<bool, 6>& vec = {true, true, true, true, true, true}) : vec_(vec) {};
+    
+    /// @brief Output s32 buffer for passing to the TCP server. s32 is a binary list meant to be
+    /// passed to the urscript function `integer_to_binary_list`.
+    /// @return s32, with the joint axis at index 0 starting at the LSB.
+    int32_t ToS32Buffer() const {
+      int32_t out = 0;
+      for (size_t i = 0; i < 6; ++i)
+      {
+        // Stuff 0 or 1 at index i to activate/deactivate axis 
+        out = ((out >> i) | vec_[i]);
+      }
+      
+      return out;
+    };
+  private:
+    const std::array<bool, 6> vec_;
+  };
+  
+  /*!
+  * \brief Container for freedrive feature
+  */
+  class Feature
+  {
+  public:
+    static constexpr int32_t feature_literal_custom = 0;
+
+    /*!
+    * \brief Container for feature literals for .
+    */
+    enum class FeatureLiterals : int32_t {
+      /// 0 is reserved to indicate that a custom vector is being passed.
+      BASE = 1,   ///< Indicates that the frame of reference is the "base"
+      TOOL = 2    ///< Indicates that the frame of reference is the "tool"
+    };
+    
+    /// @brief Feature constructor with pose vector
+    /// @note The default configuration of this constructor is consistent with the default 
+    /// freedrive `feature` variable
+    /// @param[in] vec double array of length=6
+    Feature(const vector6d_t& vec = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}) : vec_(vec), name_(std::nullopt) {};
+    
+    /// @brief Feature constructor with feature literal
+    /// @param[in] feature_name Feature name
+    Feature(FeatureLiterals feature_name) : vec_(std::nullopt), name_(feature_name) {};
+    
+    /// @brief Output s32 buffer for passing to the TCP server.
+    /// @note Buffer is dynamically allocated and must be freed!!!
+    /// @param[out] bufsize Optional, pointer to an s32 to output the size of allocated buffer
+    /// @return Pointer to s32 buffer of length `bufsize`
+    int32_t *ToS32Buffer(size_t *bufsize) const {
+      static constexpr size_t bufsize_ = 7;
+
+      // Static assert that our bufsize is not too big
+      // TODO: should there be a declaration elsewhere for the 4 (represents # of additional dwords required)
+      static_assert(bufsize_ <= MAX_MESSAGE_LENGTH - 4, "Feature buffer is too large");
+
+      // Allocate buffer
+      int32_t *out = (int32_t *)std::malloc(sizeof(int32_t) * bufsize_);
+      assert(out != nullptr && "Unable to allocate buffer");
+
+      if (vec_.has_value())
+      {
+        // Case where a vector has was suplied
+        for (size_t i = 0; i < bufsize_-2; ++i)
+        {
+          // Simply copy all elements to the buffer. 
+          // Convert to s32 w/ MULT_JOINTSTATE factor.
+          out[i] = static_cast<int32_t>(round(vec_.value()[i] * MULT_JOINTSTATE));
+        }
+
+        // Set last element meant to store literal string info
+        out[bufsize_-1] = feature_literal_custom;
+      }
+      else if (name_.has_value())
+      {
+        // Set last element to the identifier to pass
+        // Other elements can be undefined since they will be ignored
+        out[bufsize_-1] = toUnderlying(name_.value());
+      }
+      else
+      {
+        std::free(out); // TODO: needed?
+        assert(false && "Undefined behavior");
+      }
+
+      if (bufsize != NULL)
+      {
+        *bufsize = bufsize_ * sizeof(int32_t);
+      }
+
+      return out;
+    };
+  private:
+    const std::optional<vector6d_t> vec_;
+    const std::optional<FeatureLiterals> name_;
+  };
 
   ReverseInterface() = delete;
   /*!
@@ -125,12 +236,16 @@ public:
    * \param robot_receive_timeout The read timeout configuration for the reverse socket running in the external
    * control script on the robot. If you want to make the read function blocking then use RobotReceiveTimeout::off()
    * function to create the RobotReceiveTimeout object
+   * \param free_axes See UR script manual for full description.
+   * \param feature See UR script manual for full description.
    *
    * \returns True, if the write was performed successfully, false otherwise.
    */
   bool
   writeFreedriveControlMessage(const FreedriveControlMessage freedrive_action,
-                               const RobotReceiveTimeout& robot_receive_timeout = RobotReceiveTimeout::millisec(200));
+                               const RobotReceiveTimeout& robot_receive_timeout = RobotReceiveTimeout::millisec(200),
+                               const FreeAxes& free_axes = FreeAxes(),
+                               const Feature& feature = Feature());
 
   /*!
    * \brief Set the Keepalive count. This will set the number of allowed timeout reads on the robot.
@@ -159,7 +274,7 @@ protected:
     return s;
   }
 
-  static const int MAX_MESSAGE_LENGTH = 8;
+  static const int MAX_MESSAGE_LENGTH = 11;
 
   std::function<void(bool)> handle_program_state_;
   std::chrono::milliseconds step_time_;
