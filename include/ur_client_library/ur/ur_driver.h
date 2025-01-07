@@ -345,6 +345,16 @@ public:
   bool zeroFTSensor();
 
   /*!
+   * \brief Sets force mode parameters
+   *
+   * \param damping_factor Damping factor
+   * \param gain_scaling_factor Gain scaling
+   *
+   * \returns True on successful write.
+   */
+  bool setForceModeParams(const double damping_factor, const double gain_scaling_factor);
+
+  /*!
    * \brief Set the payload mass and center of gravity. Note: It requires the external control script to be running or
    * the robot to be in headless mode.
    *

@@ -71,6 +71,16 @@ public:
   bool zeroFTSensor();
 
   /*!
+   * \brief Set the force mode params
+   *
+   * \param damping_factor Damping factor
+   * \param gain_scaling_factor Gain scaling
+   * 
+   * \returns True, if the write was performed successfully, false otherwise.
+   */
+  bool setForceModeParams(const double damping_factor, const double gain_scaling_factor);
+
+  /*!
    * \brief Set the active payload mass and center of gravity
    *
    * \param mass mass in kilograms

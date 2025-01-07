@@ -57,6 +57,31 @@ bool ScriptCommandInterface::zeroFTSensor()
   return server_.write(client_fd_, buffer, sizeof(buffer), written);
 }
 
+bool ScriptCommandInterface::setForceModeParams(const double damping_factor, const double gain_scaling_factor)
+{
+  const int message_length = 3;
+  uint8_t buffer[sizeof(int32_t) * MAX_MESSAGE_LENGTH];
+  uint8_t* b_pos = buffer;
+  int32_t val = htobe32(toUnderlying(ScriptCommand::SET_FORCE_MODE_PARAMS));
+  b_pos += append(b_pos, val);
+
+  val = htobe32(static_cast<int32_t>(round(damping_factor * MULT_JOINTSTATE)));
+  b_pos += append(b_pos, val);
+
+  val = htobe32(static_cast<int32_t>(round(gain_scaling_factor * MULT_JOINTSTATE)));
+  b_pos += append(b_pos, val);
+
+  // writing zeros to allow usage with other script commands
+  for (size_t i = message_length; i < MAX_MESSAGE_LENGTH; i++)
+  {
+    val = htobe32(0);
+    b_pos += append(b_pos, val);
+  }
+  size_t written;
+
+  return server_.write(client_fd_, buffer, sizeof(buffer), written);
+}
+
 bool ScriptCommandInterface::setPayload(const double mass, const vector3d_t* cog)
 {
   const int message_length = 5;
