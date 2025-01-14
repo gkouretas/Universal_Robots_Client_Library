@@ -78,7 +78,7 @@ public:
    * 
    * \returns True, if the write was performed successfully, false otherwise.
    */
-  bool setForceModeParams(const double damping_factor, const double gain_scaling_factor);
+  // bool setForceModeParams(const double damping_factor, const double gain_scaling_factor);
 
   /*!
    * \brief Set the active payload mass and center of gravity

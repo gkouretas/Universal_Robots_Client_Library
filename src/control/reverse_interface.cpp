@@ -159,11 +159,9 @@ bool ReverseInterface::writeTrajectoryControlMessage(const TrajectoryControlMess
 }
 
 bool ReverseInterface::writeFreedriveControlMessage(const FreedriveControlMessage freedrive_action,
-                                                    const RobotReceiveTimeout& robot_receive_timeout,
-                                                    const FreeAxes& free_axes,
-                                                    const Feature& feature)
+                                                    const RobotReceiveTimeout& robot_receive_timeout)
 {
-  const int message_length = 11;
+  const int message_length = 2;
   if (client_fd_ == -1)
   {
     return false;
@@ -191,17 +189,17 @@ bool ReverseInterface::writeFreedriveControlMessage(const FreedriveControlMessag
 
   // Add the free axes as a single buffer
   // This will be converted to a binary list
-  val = htobe32(free_axes.ToS32Buffer());
-  b_pos += append(b_pos, val);
+  // val = htobe32(free_axes.ToS32Buffer());
+  // b_pos += append(b_pos, val);
 
-  // Pass 
-  size_t bufsize;
-  int32_t *buf = feature.ToS32Buffer(&bufsize);
+  // // Pass 
+  // size_t bufsize;
+  // int32_t *buf = feature.ToS32Buffer(&bufsize);
   
-  std::memcpy(b_pos, buf, bufsize);
-  std::free(buf); // free buffer
+  // std::memcpy(b_pos, buf, bufsize);
+  // std::free(buf); // free buffer
 
-  b_pos += bufsize;
+  // b_pos += bufsize;
 
   // writing zeros to allow usage with other script commands
   for (size_t i = message_length; i < MAX_MESSAGE_LENGTH - 1; i++)
