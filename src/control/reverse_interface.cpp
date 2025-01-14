@@ -163,6 +163,7 @@ bool ReverseInterface::writeFreedriveControlMessage(const FreedriveControlMessag
                                                     const FreeAxes& free_axes,
                                                     const Feature& feature)
 {
+  const int message_length = 11;
   if (client_fd_ == -1)
   {
     return false;
@@ -201,6 +202,13 @@ bool ReverseInterface::writeFreedriveControlMessage(const FreedriveControlMessag
   std::free(buf); // free buffer
 
   b_pos += bufsize;
+
+  // writing zeros to allow usage with other script commands
+  for (size_t i = message_length; i < MAX_MESSAGE_LENGTH - 1; i++)
+  {
+    val = htobe32(0);
+    b_pos += append(b_pos, val);
+  }
 
   val = htobe32(toUnderlying(comm::ControlMode::MODE_FREEDRIVE));
   b_pos += append(b_pos, val);

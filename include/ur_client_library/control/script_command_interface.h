@@ -100,12 +100,6 @@ public:
    */
   bool setToolVoltage(const ToolVoltage voltage);
 
-  /// @brief Apply force mode params
-  /// @param[in] damping_factor Damping factor
-  /// @param[in] gain_scaling_factor Gain scaling factor
-  /// @return True, if the write was performed successfully, false otherwise.
-  bool applyForceModeParams(double damping_factor, double gain_scaling_factor);
-
   /*!
    * \brief Set robot to be controlled in force mode.
    *
