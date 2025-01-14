@@ -295,6 +295,37 @@ bool UrDriver::zeroFTSensor()
   }
 }
 
+// bool UrDriver::setForceModeParams(const double damping_factor, const double gain_scaling_factor)
+// {
+//   if (script_command_interface_->clientConnected())
+//   {
+//     return script_command_interface_->setForceModeParams(damping_factor, gain_scaling_factor);
+//   }
+//   else
+//   {
+//     URCL_LOG_WARN("Script command interface is not running. Falling back to sending plain script code. This will "
+//                   "only work, if the robot is in remote_control mode.");
+//     std::stringstream cmd;
+//     cmd << "sec setup():" << std::endl << " force_mode_set_damping_factor(" << damping_factor << ")" << std::endl;
+//     if (getVersion().major >= 5)
+//     {
+//       // Add gain scaling only for e-Series robots
+//       cmd << " force_mode_set_gain_scaling(" << gain_scaling_factor << ")" << std::endl << "end";
+//     }
+//     else
+//     {
+//       std::stringstream ss;
+//       ss << "Gain scaling is only available for e-Series robots (Major version >= 5). This robot's "
+//             "version is "
+//         << getVersion();
+//       URCL_LOG_WARN(ss.str().c_str());
+//       cmd << "end";
+//     }
+
+//     return sendScript(cmd.str());
+//   }
+// }
+
 bool UrDriver::setPayload(const float mass, const vector3d_t& cog)
 {
   if (script_command_interface_->clientConnected())
