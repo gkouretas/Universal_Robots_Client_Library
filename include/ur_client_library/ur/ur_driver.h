@@ -323,6 +323,7 @@ public:
                                 const RobotReceiveTimeout& robot_receive_timeout = RobotReceiveTimeout::millisec(200));
 
   /*!
+   * TODO(george): update docs...
    * \brief Writes a control message in freedrive mode.
    *
    * \param freedrive_action The action to be taken, such as starting or stopping freedrive
@@ -334,6 +335,8 @@ public:
    */
   bool
   writeFreedriveControlMessage(const control::FreedriveControlMessage freedrive_action,
+                               const control::ReverseInterface::FreeAxes& free_axes = control::ReverseInterface::FreeAxes(),
+                               const control::ReverseInterface::Feature& feature = control::ReverseInterface::Feature(),
                                const RobotReceiveTimeout& robot_receive_timeout = RobotReceiveTimeout::millisec(200));
 
   /*!

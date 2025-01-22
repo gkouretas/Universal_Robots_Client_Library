@@ -85,6 +85,15 @@ public:
     /// freedrive `freeAxes` variable
     /// @param[in] vec boolean array of length=6
     FreeAxes(const std::array<bool, 6>& vec = {true, true, true, true, true, true}) : vec_(vec) {};
+    FreeAxes(const vector6d_t& vec) : 
+    vec_(
+      {vec[0] == 1.0 ? true : false, 
+      vec[1] == 1.0 ? true : false,
+      vec[2] == 1.0 ? true : false,
+      vec[3] == 1.0 ? true : false,
+      vec[4] == 1.0 ? true : false,
+      vec[5] == 1.0 ? true : false}
+    ) {};
     
     /// @brief Output s32 buffer for passing to the TCP server. s32 is a binary list meant to be
     /// passed to the urscript function `integer_to_binary_list`.

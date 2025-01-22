@@ -262,9 +262,11 @@ bool UrDriver::writeTrajectoryControlMessage(const control::TrajectoryControlMes
 }
 
 bool UrDriver::writeFreedriveControlMessage(const control::FreedriveControlMessage freedrive_action,
+                                            const control::ReverseInterface::FreeAxes& free_axes,
+                                            const control::ReverseInterface::Feature& feature,
                                             const RobotReceiveTimeout& robot_receive_timeout)
 {
-  return reverse_interface_->writeFreedriveControlMessage(freedrive_action, robot_receive_timeout);
+  return reverse_interface_->writeFreedriveControlMessage(freedrive_action, robot_receive_timeout, free_axes, feature);
 }
 
 bool UrDriver::zeroFTSensor()
