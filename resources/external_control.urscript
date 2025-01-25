@@ -770,27 +770,49 @@ while control_mode > MODE_STOPPED:
     elif control_mode == MODE_FREEDRIVE:
       if params_mult[2] == FREEDRIVE_MODE_START:
         textmsg("Entering freedrive mode")
-        
-        # Set freeAxes array
-        local freeAxes = integer_to_binary_list(params_mult[3]) # Convert int32 to list of binary elements
-        local feature = p[0, 0, 0, 0, 0, 0]
-        
-        freeAxes = [freeAxes[0], freeAxes[1], freeAxes[2], freeAxes[3], freeAxes[4], freeAxes[5]] # Truncate list to 6 elements
 
-        # Determine the feature
-        if params_mult[4] == FREEDRIVE_FEATURE_CUSTOM_VECTOR:
-          # Custom vector from params, read them
-          feature = p[params_mult[5] / MULT_jointstate, params_mult[6] / MULT_jointstate, params_mult[7] / MULT_jointstate, params_mult[8] / MULT_jointstate, params_mult[9] / MULT_jointstate, params_mult[10] / MULT_jointstate]
-        elif params_mult[4] == FREEDRIVE_FEATURE_BASE:
-          # Desired feature is the base
-          feature = "base"
-        elif params_mult[4] == FREEDRIVE_FEATURE_TOOL:
-          feature = "tool"
-        else:
-          textmsg("Unknown feature, using default value")
+        textmsg("Payload", params_mult)
+
+        # TODO(george): version check to see if new enough to allow for custom
+        # freeAxes/feature inputs
+        
+        # Initialize list of 6 elements
+        local freeAxes = [0, 0, 0, 0, 0, 0] 
+
+        # Convert int32 to list of binary elements
+        local freeAxesBinList = integer_to_binary_list(params_mult[3]) 
+
+        # Loop across list and set enabled axes to 1
+        local freeAxesIndex = 0
+        while freeAxesIndex < 6:
+          if freeAxesBinList[freeAxesIndex]:
+            freeAxes[freeAxesIndex] = 1
+          end
+          freeAxesIndex = freeAxesIndex + 1
         end
 
-        freedrive_mode(freeAxes, feature)
+        textmsg("freeAxes: ", freeAxes)
+
+        local feature = p[0, 0, 0, 0, 0, 0]
+
+        # Determine the feature
+        if params_mult[10] == FREEDRIVE_FEATURE_CUSTOM_VECTOR:
+          # Custom vector from params, read them
+          feature = p[params_mult[4] / MULT_jointstate, params_mult[5] / MULT_jointstate, params_mult[6] / MULT_jointstate, params_mult[7] / MULT_jointstate, params_mult[8] / MULT_jointstate, params_mult[9] / MULT_jointstate]
+          freedrive_mode(freeAxes, feature)
+          textmsg("Using custom feature vector: ", feature)
+        elif params_mult[10] == FREEDRIVE_FEATURE_BASE:
+          # Desired feature is the base
+          freedrive_mode(freeAxes, "base")
+          textmsg("Using base feature")
+        elif params_mult[10] == FREEDRIVE_FEATURE_TOOL:
+          freedrive_mode(freeAxes, "tool")
+          textmsg("Using tool feature")
+        else:
+          textmsg("Using default feature, recevied:", params_mult[10])
+          freedrive_mode(freeAxes, feature)
+        end
+        
         # TODO(george): allow for updating of freedrive axes/feature outside of start
       elif params_mult[2] == FREEDRIVE_MODE_STOP:
         textmsg("Leaving freedrive mode")

@@ -189,19 +189,30 @@ bool ReverseInterface::writeFreedriveControlMessage(const FreedriveControlMessag
   val = htobe32(toUnderlying(freedrive_action));
   b_pos += append(b_pos, val);
 
-  // Add the free axes as a single buffer
-  // This will be converted to a binary list
-  val = htobe32(free_axes.ToS32Buffer());
-  b_pos += append(b_pos, val);
+  if (freedrive_action == FreedriveControlMessage::FREEDRIVE_START)
+  {
+    // Add the free axes as a single buffer
+    // This will be converted to a binary list
+    val = htobe32(free_axes.ToS32Buffer());
+    b_pos += append(b_pos, val);
 
-  // Pass 
-  size_t bufsize;
-  int32_t *buf = feature.ToS32Buffer(&bufsize);
-  
-  std::memcpy(b_pos, buf, bufsize);
-  std::free(buf); // free buffer
+    // Pass feature
+    size_t bufsize;
+    int32_t *buf = feature.ToS32Buffer(&bufsize);
+    
+    std::memcpy(b_pos, buf, bufsize);
+    std::free(buf); // free buffer
 
-  b_pos += bufsize;
+    b_pos += bufsize;
+  }
+  else
+  {
+    for (size_t i = 0; i < free_axes.GetBufferInt32Length() + feature.GetBufferInt32Length(); ++i)
+    {
+      val = htobe32(0);
+      b_pos += append(b_pos, val);
+    }
+  }
 
   // writing zeros to allow usage with other script commands
   for (size_t i = message_length; i < MAX_MESSAGE_LENGTH - 1; i++)

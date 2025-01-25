@@ -103,11 +103,15 @@ public:
       for (size_t i = 0; i < 6; ++i)
       {
         // Stuff 0 or 1 at index i to activate/deactivate axis 
-        out = ((out >> i) | vec_[i]);
+        out = (out | (vec_[i] << i));
       }
       
       return out;
     };
+
+    const size_t GetBufferInt32Length() const {
+      return 1;
+    }
   private:
     const std::array<bool, 6> vec_;
   };
@@ -144,8 +148,6 @@ public:
     /// @param[out] bufsize Optional, pointer to an s32 to output the size of allocated buffer
     /// @return Pointer to s32 buffer of length `bufsize`
     int32_t *ToS32Buffer(size_t *bufsize) const {
-      static constexpr size_t bufsize_ = 7;
-
       // Static assert that our bufsize is not too big
       // TODO(george): should there be a declaration elsewhere for the 4 (represents # of additional dwords required)
       static_assert(bufsize_ <= MAX_MESSAGE_LENGTH - 4, "Feature buffer is too large");
@@ -154,6 +156,9 @@ public:
       int32_t *out = (int32_t *)std::malloc(sizeof(int32_t) * bufsize_);
       assert(out != nullptr && "Unable to allocate buffer");
 
+      // Set memory block to zero
+      std::memset((void *)out, 0, sizeof(int32_t) * bufsize_);
+
       if (vec_.has_value())
       {
         // Case where a vector has was suplied
@@ -161,17 +166,17 @@ public:
         {
           // Simply copy all elements to the buffer. 
           // Convert to s32 w/ MULT_JOINTSTATE factor.
-          out[i] = static_cast<int32_t>(round(vec_.value()[i] * MULT_JOINTSTATE));
+          out[i] = htobe32(static_cast<int32_t>(round(vec_.value()[i] * MULT_JOINTSTATE)));
         }
 
         // Set last element meant to store literal string info
-        out[bufsize_-1] = feature_literal_custom;
+        out[bufsize_-1] = htobe32(feature_literal_custom);
       }
       else if (name_.has_value())
       {
         // Set last element to the identifier to pass
         // Other elements can be undefined since they will be ignored
-        out[bufsize_-1] = toUnderlying(name_.value());
+        out[bufsize_-1] = htobe32(toUnderlying(name_.value()));
       }
       else
       {
@@ -186,7 +191,12 @@ public:
 
       return out;
     };
+
+    size_t GetBufferInt32Length() const {
+      return bufsize_;
+    }
   private:
+    static constexpr size_t bufsize_ = 7;
     const std::optional<vector6d_t> vec_;
     const std::optional<FeatureLiterals> name_;
   };
