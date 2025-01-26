@@ -109,7 +109,7 @@ public:
       return out;
     };
 
-    const size_t GetBufferInt32Length() const {
+    size_t GetBufferInt32Length() const {
       return 1;
     }
   private:
