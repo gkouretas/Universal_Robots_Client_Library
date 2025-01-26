@@ -659,8 +659,10 @@ thread script_commands():
           force_mode_set_gain_scaling(raw_command[28] / MULT_jointstate)
         end
         force_mode(task_frame, selection_vector, wrench, force_type, force_limits)
+        textmsg("Started force mode")
       elif command == END_FORCE_MODE:
         end_force_mode()
+        textmsg("Ended force mode")
       elif command == START_TOOL_CONTACT:
         tool_contact_running = True
       elif command == END_TOOL_CONTACT:
@@ -671,11 +673,13 @@ thread script_commands():
         tool_contact_running = False
       elif command == SET_FORCE_MODE_PARAMS:
         force_mode_set_damping(raw_command[2] / MULT_jointstate)
+        textmsg("Damping: ", raw_command[2] / MULT_jointstate)
         # Check whether script is running on CB3 or e-series. Gain scaling can only be set on e-series robots.
         # step time = 0.008: CB3 robot
         # Step time = 0.002: e-series robot
         if (get_steptime() < 0.008):
           force_mode_set_gain_scaling(raw_command[3] / MULT_jointstate)
+          textmsg("Gain scaling: ", raw_command[3] / MULT_jointstate)
         end
       end
     end
