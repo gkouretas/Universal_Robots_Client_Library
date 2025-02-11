@@ -32,7 +32,7 @@ MODE_FREEDRIVE = 6
 MODE_TOOL_IN_CONTACT = 7
 MODE_DYNAMIC_FORCE_MODE = 8
 # Data dimensions of the message received on the reverse interface
-REVERSE_INTERFACE_DATA_DIMENSION = 11
+REVERSE_INTERFACE_DATA_DIMENSION = 16
 
 TRAJECTORY_MODE_RECEIVE = 1
 TRAJECTORY_MODE_CANCEL = -1
@@ -102,6 +102,31 @@ global dynamic_force_mode_state = DYNAMIC_FORCE_MODE_UNINITIALIZED
 thread_move = 0
 thread_trajectory = 0
 thread_script_commands = 0
+
+###
+# @brief Convert bit-packed vector into length=6 boolean array
+# @param val int 32-bit integer with bitwise true/false for 6 LSB's
+#
+# @returns array array of 6 elements of 0's and 1's
+###
+def int32To6ElementBinaryList(val):
+  # Initialize list of 6 elements
+  local binArray = [0, 0, 0, 0, 0, 0] 
+
+  # Convert int32 to list of binary elements
+  local binArrayL32 = integer_to_binary_list(val) 
+
+  # Loop across list and set enabled axes to 1
+  local i = 0
+  while i < 6:
+    if binArrayL32[i]:
+      binArray[i] = 1
+    end
+    i = i + 1
+  end
+
+  return binArray
+end
 
 ###
 # @brief Function to verify whether the specified target can be reached within the defined time frame while staying within
@@ -704,16 +729,18 @@ thread script_commands():
           force_mode_set_gain_scaling(raw_command[28] / MULT_jointstate)
         end
         if control_mode == MODE_DYNAMIC_FORCE_MODE:
-          set_dynamic_force_mode_params(task_frame, selection_vector, wrench)
-
-          # Set force type/limits here, as the main thread does not allow 
-          # force type/limits configurability while dynamic force mode is active
-          dynamic_force_mode_force_type = force_type
-          dynamic_force_mode_force_limits = force_limits
-
           if dynamic_force_mode_state < DYNAMIC_FORCE_MODE_READY:
             textmsg("Starting dynamic force mode")
+            set_dynamic_force_mode_params(task_frame, selection_vector, wrench)
+
+            # Set force type/limits here, as the main thread does not allow 
+            # force type/limits configurability while dynamic force mode is active
+            local dynamic_force_mode_force_type = force_type
+            local dynamic_force_mode_force_limits = force_limits
+
             dynamic_force_mode_state = DYNAMIC_FORCE_MODE_READY
+          else:
+            textmsg("Dynamic force mode already started, end it or update in control loop")
           end
         else:
           textmsg("Started standard force mode")
@@ -848,20 +875,7 @@ while control_mode > MODE_STOPPED:
         # freeAxes/feature inputs #
         ###########################
 
-        # Initialize list of 6 elements
-        local freeAxes = [0, 0, 0, 0, 0, 0] 
-
-        # Convert int32 to list of binary elements
-        local freeAxesBinList = integer_to_binary_list(params_mult[3]) 
-
-        # Loop across list and set enabled axes to 1
-        local freeAxesIndex = 0
-        while freeAxesIndex < 6:
-          if freeAxesBinList[freeAxesIndex]:
-            freeAxes[freeAxesIndex] = 1
-          end
-          freeAxesIndex = freeAxesIndex + 1
-        end
+        local freeAxes = int32To6ElementBinaryList(params_mult[3])
 
         textmsg("freeAxes: ", freeAxes)
 
@@ -891,7 +905,11 @@ while control_mode > MODE_STOPPED:
         end_freedrive_mode()
       end
     elif control_mode == MODE_DYNAMIC_FORCE_MODE:
-
+      # Update dynamic parameters
+      local task_frame = p[params_mult[2] / MULT_jointstate, params_mult[3] / MULT_jointstate, params_mult[4] / MULT_jointstate, params_mult[5] / MULT_jointstate, params_mult[6] / MULT_jointstate, params_mult[7] / MULT_jointstate]
+      local selection_vector = int32To6ElementBinaryList(params_mult[8])
+      local wrench = [params_mult[9] / MULT_jointstate, params_mult[10] / MULT_jointstate, params_mult[11] / MULT_jointstate, params_mult[12] / MULT_jointstate, params_mult[13] / MULT_jointstate, params_mult[14] / MULT_jointstate]
+      set_dynamic_force_mode_params(task_frame, selection_vector, wrench)
     end
     # Tool contact is running, but hasn't been detected
     if tool_contact_running == True and control_mode != MODE_TOOL_IN_CONTACT:

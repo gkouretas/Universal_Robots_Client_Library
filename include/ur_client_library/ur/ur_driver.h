@@ -335,8 +335,14 @@ public:
    */
   bool
   writeFreedriveControlMessage(const control::FreedriveControlMessage freedrive_action,
-                               const control::ReverseInterface::FreeAxes& free_axes = control::ReverseInterface::FreeAxes(),
+                               const control::ReverseInterface::BinaryArray& free_axes = control::ReverseInterface::BinaryArray(),
                                const control::ReverseInterface::Feature& feature = control::ReverseInterface::Feature(),
+                               const RobotReceiveTimeout& robot_receive_timeout = RobotReceiveTimeout::millisec(200));
+
+  bool
+  writeDynamicForceModeMessage(const vector6d_t& task_frame,
+                               const control::ReverseInterface::BinaryArray& compliance_vector,
+                               const vector6d_t& wrench,
                                const RobotReceiveTimeout& robot_receive_timeout = RobotReceiveTimeout::millisec(200));
 
   /*!

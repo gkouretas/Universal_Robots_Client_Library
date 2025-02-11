@@ -41,17 +41,17 @@ namespace comm
  */
 enum class ControlMode : int32_t
 {
-  MODE_STOPPED = -2,        ///< When this is set, the program is expected to stop and exit.
-  MODE_UNINITIALIZED = -1,  ///< Startup default until another mode is sent to the script.
-  MODE_IDLE = 0,            ///< Set when no controller is currently active controlling the robot.
-  MODE_SERVOJ = 1,          ///< Set when servoj control is active.
-  MODE_SPEEDJ = 2,          ///< Set when speedj control is active.
-  MODE_FORWARD = 3,         ///< Set when trajectory forwarding is active.
-  MODE_SPEEDL = 4,          ///< Set when cartesian velocity control is active.
-  MODE_POSE = 5,            ///< Set when cartesian pose control is active.
-  MODE_FREEDRIVE = 6,       ///< Set when freedrive mode is active.
-  MODE_TOOL_IN_CONTACT =
-      7,  ///< Used only internally in the script, when robot is in tool contact, clear by endToolContact()
+  MODE_STOPPED = -2,           ///< When this is set, the program is expected to stop and exit.
+  MODE_UNINITIALIZED = -1,     ///< Startup default until another mode is sent to the script.
+  MODE_IDLE = 0,               ///< Set when no controller is currently active controlling the robot.
+  MODE_SERVOJ = 1,             ///< Set when servoj control is active.
+  MODE_SPEEDJ = 2,             ///< Set when speedj control is active.
+  MODE_FORWARD = 3,            ///< Set when trajectory forwarding is active.
+  MODE_SPEEDL = 4,             ///< Set when cartesian velocity control is active.
+  MODE_POSE = 5,               ///< Set when cartesian pose control is active.
+  MODE_FREEDRIVE = 6,          ///< Set when freedrive mode is active.
+  MODE_TOOL_IN_CONTACT = 7,    ///< Used only internally in the script, when robot is in tool contact, clear by endToolContact()
+  MODE_DYNAMIC_FORCE_MODE = 8, ///< Set when dynamic force mode is active 
   END     ///< This is not an actual control mode, but used internally to get the number of control modes
 };
 
