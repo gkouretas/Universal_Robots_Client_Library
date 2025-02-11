@@ -622,7 +622,7 @@ thread dynamicForceModeThread():
     enter_critical
     if dynamic_force_mode_state == DYNAMIC_FORCE_MODE_READY:
       # Transition state to "running" if ready signal is applied
-      dynamic_force_mode_state == DYNAMIC_FORCE_MODE_RUNNING
+      dynamic_force_mode_state = DYNAMIC_FORCE_MODE_RUNNING
     end
 
     if dynamic_force_mode_state == DYNAMIC_FORCE_MODE_RUNNING:
@@ -722,7 +722,7 @@ thread script_commands():
       elif command == END_FORCE_MODE:
         if control_mode == MODE_DYNAMIC_FORCE_MODE:
           # Set flag prior to prevent re-entering force mode
-          dynamic_force_mode_state = DYNAMIC_FORCE_MODE_ENDED
+          dynamic_force_mode_state = DYNAMIC_FORCE_MODE_STOPPED
         end
         end_force_mode()
         textmsg("Ended force mode")
