@@ -32,7 +32,7 @@ MODE_FREEDRIVE = 6
 MODE_TOOL_IN_CONTACT = 7
 MODE_DYNAMIC_FORCE_MODE = 8
 # Data dimensions of the message received on the reverse interface
-REVERSE_INTERFACE_DATA_DIMENSION = 16
+REVERSE_INTERFACE_DATA_DIMENSION = 15
 
 TRAJECTORY_MODE_RECEIVE = 1
 TRAJECTORY_MODE_CANCEL = -1
@@ -642,7 +642,7 @@ def set_servo_pose(pose):
 end
 
 thread dynamicForceModeThread():
-  textmsg("Starting dynamic force mode")
+  textmsg("Starting dynamic force mode thread")
   while control_mode == MODE_DYNAMIC_FORCE_MODE:
     enter_critical
     if dynamic_force_mode_state == DYNAMIC_FORCE_MODE_READY:

@@ -63,7 +63,7 @@ class ControlModeTypes
 public:
   // Control modes that require realtime communication
   static const inline std::vector<ControlMode> REALTIME_CONTROL_MODES = {
-    ControlMode::MODE_SERVOJ, ControlMode::MODE_SPEEDJ, ControlMode::MODE_SPEEDL, ControlMode::MODE_POSE
+    ControlMode::MODE_SERVOJ, ControlMode::MODE_SPEEDJ, ControlMode::MODE_SPEEDL, ControlMode::MODE_POSE, ControlMode::MODE_DYNAMIC_FORCE_MODE
   };
 
   // Control modes that doesn't require realtime communication

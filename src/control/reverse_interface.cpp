@@ -235,7 +235,7 @@ bool ReverseInterface::writeDynamicForceModeMessage(const vector6d_t& task_frame
                                                     const vector6d_t& wrench,
                                                     const RobotReceiveTimeout& robot_receive_timeout)
 {
-  const int message_length = 16;
+  const int message_length = 15;
   if (client_fd_ == -1)
   {
     return false;
@@ -243,7 +243,7 @@ bool ReverseInterface::writeDynamicForceModeMessage(const vector6d_t& task_frame
   uint8_t buffer[sizeof(int32_t) * MAX_MESSAGE_LENGTH];
   uint8_t* b_pos = buffer;
 
-  int read_timeout = robot_receive_timeout.verifyRobotReceiveTimeout(comm::ControlMode::MODE_FREEDRIVE, step_time_);
+  int read_timeout = robot_receive_timeout.verifyRobotReceiveTimeout(comm::ControlMode::MODE_DYNAMIC_FORCE_MODE, step_time_);
 
   // This can be removed once we remove the setkeepAliveCount() method
   auto read_timeout_resolved = read_timeout;
@@ -287,6 +287,18 @@ bool ReverseInterface::writeDynamicForceModeMessage(const vector6d_t& task_frame
   b_pos += append(b_pos, val);
 
   size_t written;
+
+  static bool logged = false;
+  if (!logged)
+  {
+    URCL_LOG_INFO("%ld", toUnderlying(comm::ControlMode::MODE_DYNAMIC_FORCE_MODE));
+    URCL_LOG_INFO("Packet:");
+    for (size_t i = 0; i < MAX_MESSAGE_LENGTH; ++i)
+    {
+      URCL_LOG_INFO("%ld", ((uint32_t *)buffer)[i]);
+    }
+    logged = true;
+  }
 
   return server_.write(client_fd_, buffer, sizeof(buffer), written);
 }
