@@ -93,7 +93,9 @@ global dynamic_force_mode_task_frame = get_actual_tool_flange_pose()
 global dynamic_force_mode_selection_vector = [0, 0, 0, 0, 0, 0]
 global dynamic_force_mode_wrench = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 global dynamic_force_mode_force_type = 2
-global dynamic_force_mode_force_limits = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+#global dynamic_force_mode_force_limits = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+# TODO(george): revert. for some reason, the values do not seem to be getting passed...
+global dynamic_force_mode_force_limits = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 global dynamic_force_mode_state = DYNAMIC_FORCE_MODE_UNINITIALIZED
 
 #task_frame, selection_vector, wrench, force_type, force_limits
@@ -643,6 +645,7 @@ end
 
 thread dynamicForceModeThread():
   textmsg("Starting dynamic force mode thread")
+  local i = 0
   while control_mode == MODE_DYNAMIC_FORCE_MODE:
     enter_critical
     if dynamic_force_mode_state == DYNAMIC_FORCE_MODE_READY:
@@ -652,6 +655,13 @@ thread dynamicForceModeThread():
 
     if dynamic_force_mode_state == DYNAMIC_FORCE_MODE_RUNNING:
       # Update force mode parameters
+      if i == 500:
+        textmsg("Task frame: ", dynamic_force_mode_task_frame)
+        textmsg("Compliance: ", dynamic_force_mode_selection_vector)
+        textmsg("Wrench: ", dynamic_force_mode_wrench)
+        i = 0
+      end
+      i = i + 1
       force_mode(dynamic_force_mode_task_frame, dynamic_force_mode_selection_vector, dynamic_force_mode_wrench, dynamic_force_mode_force_type, dynamic_force_mode_force_limits)
     end
     sync()
@@ -669,7 +679,7 @@ end
 def set_dynamic_force_mode_params(task_frame, selection_vector, wrench):
   dynamic_force_mode_task_frame = task_frame
   dynamic_force_mode_selection_vector = selection_vector
-  dynamic_force_mode_wrench = wrench
+  #dynamic_force_mode_wrench = wrench
 end
 
 def tool_contact_detection():
