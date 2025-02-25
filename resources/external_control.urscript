@@ -89,10 +89,11 @@ global spline_qdd = [0, 0, 0, 0, 0, 0]
 global spline_qd = [0, 0, 0, 0, 0, 0]
 global tool_contact_running = False
 global trajectory_result = 0
-global dynamic_force_mode_task_frame = get_actual_tool_flange_pose()
+global dynamic_force_mode_task_frame = get_actual_tcp_pose()
 global dynamic_force_mode_selection_vector = [0, 0, 0, 0, 0, 0]
 global dynamic_force_mode_wrench = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-global dynamic_force_mode_force_type = 2
+# global dynamic_force_mode_force_type = 2
+global dynamic_force_mode_force_type = 1
 #global dynamic_force_mode_force_limits = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 # TODO(george): revert. for some reason, the values do not seem to be getting passed...
 global dynamic_force_mode_force_limits = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
@@ -659,6 +660,8 @@ thread dynamicForceModeThread():
         textmsg("Task frame: ", dynamic_force_mode_task_frame)
         textmsg("Compliance: ", dynamic_force_mode_selection_vector)
         textmsg("Wrench: ", dynamic_force_mode_wrench)
+        textmsg("Type: ", dynamic_force_mode_force_type)
+        textmsg("Limits: ", dynamic_force_mode_force_limits)
         i = 0
       end
       i = i + 1
