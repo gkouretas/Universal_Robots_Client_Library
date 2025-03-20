@@ -163,7 +163,7 @@ bool ReverseInterface::writeFreedriveControlMessage(const FreedriveControlMessag
                                                     const BinaryArray& free_axes,
                                                     const Feature& feature)
 {
-  const int message_length = 11;
+  const int message_length = 10;
   if (client_fd_ == -1)
   {
     return false;
