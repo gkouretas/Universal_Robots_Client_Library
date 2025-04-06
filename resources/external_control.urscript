@@ -916,6 +916,13 @@ while control_mode > MODE_STOPPED:
       elif params_mult[2] == FREEDRIVE_MODE_STOP:
         textmsg("Leaving freedrive mode")
         end_freedrive_mode()
+      else:
+        local freedrive_status = get_freedrive_status()
+        if freedrive_status == 1:
+          textmsg("Near singularity!")
+        elif freedrive_status == 2:
+          textmsg("Too close to singularity!")
+        end
       end
     elif control_mode == MODE_DYNAMIC_FORCE_MODE:
       # Update dynamic parameters
