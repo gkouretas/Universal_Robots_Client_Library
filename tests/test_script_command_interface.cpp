@@ -190,7 +190,8 @@ TEST_F(ScriptCommandInterfaceTest, test_set_payload)
 
   double mass = 1.0;
   vector3d_t cog = { 0.2, 0.3, 0.1 };
-  script_command_interface_->setPayload(mass, &cog);
+  vector6d_t inertia = { 1.1, 1.2, 1.3, 1.4, 1.5, 1.6 };
+  script_command_interface_->setPayload(mass, &cog, &inertia);
   int32_t command;
   std::vector<int32_t> message;
   client_->readMessage(command, message);
@@ -211,8 +212,16 @@ TEST_F(ScriptCommandInterfaceTest, test_set_payload)
     EXPECT_EQ(received_cog[i], cog[i]);
   }
 
+  // Test inertia
+  vector6d_t received_inertia;
+  for (unsigned int i = 0; i < inertia.size(); ++i)
+  {
+    received_inertia[i] = (double)message[i + 1] / script_command_interface_->MULT_JOINTSTATE;
+    EXPECT_EQ(received_inertia[i], inertia[i]);
+  }
+
   // The rest of the message should be zero
-  int32_t message_sum = std::accumulate(std::begin(message) + 4, std::end(message), 0);
+  int32_t message_sum = std::accumulate(std::begin(message) + 10, std::end(message), 0);
   int32_t expected_message_sum = 0;
   EXPECT_EQ(message_sum, expected_message_sum);
 }

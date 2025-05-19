@@ -86,10 +86,12 @@ public:
    * \param mass mass in kilograms
    * \param cog  Center of Gravity, a vector [CoGx, CoGy, CoGz] specifying the displacement (in meters) from the
    * toolmount
+   * \param inertia Inertia matrix, a vector [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] with origin in the CoG and the axes 
+   * aligned with the tool flange axes.
    *
    * \returns True, if the write was performed successfully, false otherwise.
    */
-  bool setPayload(const double mass, const vector3d_t* cog);
+  bool setPayload(const double mass, const vector3d_t* cog, const vector6d_t* inertia);
 
   /*!
    * \brief Set the tool voltage.

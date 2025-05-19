@@ -336,11 +336,11 @@ bool UrDriver::setForceModeParams(const double damping_factor, const double gain
   }
 }
 
-bool UrDriver::setPayload(const float mass, const vector3d_t& cog)
+bool UrDriver::setPayload(const float mass, const vector3d_t& cog, const vector6d_t& inertia)
 {
   if (script_command_interface_->clientConnected())
   {
-    return script_command_interface_->setPayload(mass, &cog);
+    return script_command_interface_->setPayload(mass, &cog, &inertia);
   }
   else
   {
@@ -349,7 +349,9 @@ bool UrDriver::setPayload(const float mass, const vector3d_t& cog)
     std::stringstream cmd;
     cmd.imbue(std::locale::classic());  // Make sure, decimal divider is actually '.'
     cmd << "sec setup():" << std::endl
-        << " set_payload(" << mass << ", [" << cog[0] << ", " << cog[1] << ", " << cog[2] << "])" << std::endl
+        << " set_target_payload(" << mass << ", [" << cog[0] << ", " << cog[1] << ", " << cog[2] << "]" 
+        << ", [" << inertia[0] << ", " << inertia[1] << ", " << inertia[2] << ", " << inertia[3] << ", " 
+        << inertia[4] << ", " << inertia[5]  << "])" << std::endl
         << "end";
     return sendScript(cmd.str());
   }

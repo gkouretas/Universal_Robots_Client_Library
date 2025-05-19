@@ -82,9 +82,9 @@ bool ScriptCommandInterface::setForceModeParams(const double damping_factor, con
   return server_.write(client_fd_, buffer, sizeof(buffer), written);
 }
 
-bool ScriptCommandInterface::setPayload(const double mass, const vector3d_t* cog)
+bool ScriptCommandInterface::setPayload(const double mass, const vector3d_t* cog, const vector6d_t* inertia)
 {
-  const int message_length = 5;
+  const int message_length = 11;
   uint8_t buffer[sizeof(int32_t) * MAX_MESSAGE_LENGTH];
   uint8_t* b_pos = buffer;
   int32_t val = htobe32(toUnderlying(ScriptCommand::SET_PAYLOAD));
@@ -96,6 +96,12 @@ bool ScriptCommandInterface::setPayload(const double mass, const vector3d_t* cog
   for (auto const& center_of_mass : *cog)
   {
     val = htobe32(static_cast<int32_t>(round(center_of_mass * MULT_JOINTSTATE)));
+    b_pos += append(b_pos, val);
+  }
+
+  for (auto const& inertial_axis : *inertia)
+  {
+    val = htobe32(static_cast<int32_t>(round(inertial_axis * MULT_JOINTSTATE)));
     b_pos += append(b_pos, val);
   }
 

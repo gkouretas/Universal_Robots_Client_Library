@@ -724,7 +724,8 @@ thread script_commands():
       elif command == SET_PAYLOAD:
         mass = raw_command[2] / MULT_jointstate
         cog = [raw_command[3] / MULT_jointstate, raw_command[4] / MULT_jointstate, raw_command[5] / MULT_jointstate]
-        set_payload(mass, cog)
+        inertia = [raw_command[6] / MULT_jointstate, raw_command[7] / MULT_jointstate, raw_command[8] / MULT_jointstate, raw_command[9] / MULT_jointstate, raw_command[10] / MULT_jointstate, raw_command[11] / MULT_jointstate]
+        set_target_payload(mass, cog)
       elif command == SET_TOOL_VOLTAGE:
         tool_voltage = raw_command[2] / MULT_jointstate
         set_tool_voltage(tool_voltage)

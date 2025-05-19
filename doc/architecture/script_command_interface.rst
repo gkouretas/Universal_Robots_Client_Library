@@ -12,7 +12,7 @@ available in specific API calls.
 At the time of writing the ``ScriptCommandInterface`` provides the following functions:
 
 - ``zeroFTSensor()``: Zeros the force/torque sensor.
-- ``setPayload()``: Set the active payload mass and center of gravity.
+- ``setPayload()``: Set the active payload mass, center of gravity, and moment of inertia.
 - ``setToolVoltage()``: Set the voltage of the tool output.
 - ``startForceMode()`` / ``endForceMode()``: Start and end a force mode. See the `force mode
   example <https://github.com/UniversalRobots/Universal_Robots_Client_Library/blob/master/examples/force_mode_example.cpp>`_ for more information.
@@ -68,6 +68,7 @@ The robot reads from the "script_command_socket" expecting a 32 bit integer repr
    =====  =====
    1      Payload mass in kg (floating point)
    2-4    Payload center of gravity in m, displacement from the toolmpount (floating point)
+   5-10   Payload inertia matrix [kg*m^2], with the CoG as the origin and the axes aligned with the tool flange axes
    =====  =====
 
 .. table:: With setToolVoltage command
