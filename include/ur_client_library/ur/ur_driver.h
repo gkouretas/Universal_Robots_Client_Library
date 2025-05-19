@@ -378,6 +378,15 @@ public:
   bool setPayload(const float mass, const vector3d_t& cog, const vector6d_t& inertia);
 
   /*!
+   * \brief Set the TCP pose offset.
+   *
+   * \param tcp_pose_offset TCP pose offset, a vector [x, y, z, rx, ry, rz]
+   * 
+   * \returns True on successful write.
+   */
+  bool setTCPPoseOffset(const vector6d_t& tcp_pose_offset);
+
+  /*!
    * \brief Set the tool voltage. Note: It requires the external control script to be running or the robot to be in
    * headless mode.
    *

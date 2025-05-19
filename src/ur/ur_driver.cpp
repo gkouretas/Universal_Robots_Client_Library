@@ -357,6 +357,27 @@ bool UrDriver::setPayload(const float mass, const vector3d_t& cog, const vector6
   }
 }
 
+bool UrDriver::setTCPPoseOffset(const vector6d_t& tcp_pose_offset)
+{
+  if (script_command_interface_->clientConnected())
+  {
+    return script_command_interface_->setTCPPoseOffset(&tcp_pose_offset);
+  }
+  else
+  {
+    URCL_LOG_WARN("Script command interface is not running. Falling back to sending plain script code. On e-Series "
+                  "robots this will only work, if the robot is in remote_control mode.");
+    std::stringstream cmd;
+    cmd.imbue(std::locale::classic());  // Make sure, decimal divider is actually '.'
+    cmd << "sec setup():" << std::endl
+        << " set_tcp(" << "p["
+        << tcp_pose_offset[0] << ", " << tcp_pose_offset[1] << ", " << tcp_pose_offset[2] << ", " << tcp_pose_offset[3] << ", " 
+        << tcp_pose_offset[4] << ", " << tcp_pose_offset[5]  << "])" << std::endl
+        << "end";
+    return sendScript(cmd.str());
+  }
+}
+
 bool UrDriver::setToolVoltage(const ToolVoltage voltage)
 {
   // Test that the tool voltage is either 0, 12 or 24.

@@ -54,6 +54,7 @@ END_FORCE_MODE = 4
 START_TOOL_CONTACT = 5
 END_TOOL_CONTACT = 6
 SET_FORCE_MODE_PARAMS = 7
+SET_TCP_POSE_OFFSET = 8
 SCRIPT_COMMAND_DATA_DIMENSION = 28
 
 FREEDRIVE_MODE_START = 1
@@ -785,6 +786,10 @@ thread script_commands():
           force_mode_set_gain_scaling(raw_command[3] / MULT_jointstate)
           textmsg("Gain scaling: ", raw_command[3] / MULT_jointstate)
         end
+      elif command == SET_TCP_POSE_OFFSET:
+        pose = p[raw_command[2] / MULT_jointstate, raw_command[3] / MULT_jointstate, raw_command[4] / MULT_jointstate, raw_command[5] / MULT_jointstate, raw_command[6] / MULT_jointstate, raw_command[7] / MULT_jointstate]
+        set_tcp(pose)
+        textmsg("Pose offset: ", pose)
       end
     end
   end
