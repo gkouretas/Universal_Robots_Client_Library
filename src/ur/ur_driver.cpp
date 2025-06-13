@@ -262,9 +262,19 @@ bool UrDriver::writeTrajectoryControlMessage(const control::TrajectoryControlMes
 }
 
 bool UrDriver::writeFreedriveControlMessage(const control::FreedriveControlMessage freedrive_action,
+                                            const control::ReverseInterface::BinaryArray& free_axes,
+                                            const control::ReverseInterface::Feature& feature,
                                             const RobotReceiveTimeout& robot_receive_timeout)
 {
-  return reverse_interface_->writeFreedriveControlMessage(freedrive_action, robot_receive_timeout);
+  return reverse_interface_->writeFreedriveControlMessage(freedrive_action, robot_receive_timeout, free_axes, feature);
+}
+
+bool UrDriver::writeDynamicForceModeMessage(const vector6d_t& task_frame,
+                                            const control::ReverseInterface::BinaryArray& compliance_vector,
+                                            const vector6d_t& wrench,
+                                            const RobotReceiveTimeout& robot_receive_timeout)
+{
+  return reverse_interface_->writeDynamicForceModeMessage(task_frame, compliance_vector, wrench, robot_receive_timeout);
 }
 
 bool UrDriver::zeroFTSensor()
@@ -295,11 +305,42 @@ bool UrDriver::zeroFTSensor()
   }
 }
 
-bool UrDriver::setPayload(const float mass, const vector3d_t& cog)
+bool UrDriver::setForceModeParams(const double damping_factor, const double gain_scaling_factor)
 {
   if (script_command_interface_->clientConnected())
   {
-    return script_command_interface_->setPayload(mass, &cog);
+    return script_command_interface_->setForceModeParams(damping_factor, gain_scaling_factor);
+  }
+  else
+  {
+    URCL_LOG_WARN("Script command interface is not running. Falling back to sending plain script code. This will "
+                  "only work, if the robot is in remote_control mode.");
+    std::stringstream cmd;
+    cmd << "sec setup():" << std::endl << " force_mode_set_damping_factor(" << damping_factor << ")" << std::endl;
+    if (getVersion().major >= 5)
+    {
+      // Add gain scaling only for e-Series robots
+      cmd << " force_mode_set_gain_scaling(" << gain_scaling_factor << ")" << std::endl << "end";
+    }
+    else
+    {
+      std::stringstream ss;
+      ss << "Gain scaling is only available for e-Series robots (Major version >= 5). This robot's "
+            "version is "
+        << getVersion();
+      URCL_LOG_WARN(ss.str().c_str());
+      cmd << "end";
+    }
+
+    return sendScript(cmd.str());
+  }
+}
+
+bool UrDriver::setPayload(const float mass, const vector3d_t& cog, const vector6d_t& inertia)
+{
+  if (script_command_interface_->clientConnected())
+  {
+    return script_command_interface_->setPayload(mass, &cog, &inertia);
   }
   else
   {
@@ -308,7 +349,30 @@ bool UrDriver::setPayload(const float mass, const vector3d_t& cog)
     std::stringstream cmd;
     cmd.imbue(std::locale::classic());  // Make sure, decimal divider is actually '.'
     cmd << "sec setup():" << std::endl
-        << " set_payload(" << mass << ", [" << cog[0] << ", " << cog[1] << ", " << cog[2] << "])" << std::endl
+        << " set_target_payload(" << mass << ", [" << cog[0] << ", " << cog[1] << ", " << cog[2] << "]" 
+        << ", [" << inertia[0] << ", " << inertia[1] << ", " << inertia[2] << ", " << inertia[3] << ", " 
+        << inertia[4] << ", " << inertia[5]  << "])" << std::endl
+        << "end";
+    return sendScript(cmd.str());
+  }
+}
+
+bool UrDriver::setTCPPoseOffset(const vector6d_t& tcp_pose_offset)
+{
+  if (script_command_interface_->clientConnected())
+  {
+    return script_command_interface_->setTCPPoseOffset(&tcp_pose_offset);
+  }
+  else
+  {
+    URCL_LOG_WARN("Script command interface is not running. Falling back to sending plain script code. On e-Series "
+                  "robots this will only work, if the robot is in remote_control mode.");
+    std::stringstream cmd;
+    cmd.imbue(std::locale::classic());  // Make sure, decimal divider is actually '.'
+    cmd << "sec setup():" << std::endl
+        << " set_tcp(" << "p["
+        << tcp_pose_offset[0] << ", " << tcp_pose_offset[1] << ", " << tcp_pose_offset[2] << ", " << tcp_pose_offset[3] << ", " 
+        << tcp_pose_offset[4] << ", " << tcp_pose_offset[5]  << "])" << std::endl
         << "end";
     return sendScript(cmd.str());
   }
