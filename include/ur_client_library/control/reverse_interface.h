@@ -75,17 +75,16 @@ public:
   static const int32_t MULT_JOINTSTATE = 1000000;
 
   /*!
-  * \brief Container for binary list of enabling/disabling axes for freedrive mode
+  * \brief Container for binary list of enabling/disabling axes
   */
-  class FreeAxes
+  class BinaryArray
   {
   public:
-    /// @brief FreeAxes constructor
-    /// @note The default configuration of this constructor is consistent with the default 
-    /// freedrive `freeAxes` variable
+    /// @brief BinaryArray constructor
+    /// @note The default configuration of this constructor is for all axes to be active
     /// @param[in] vec boolean array of length=6
-    FreeAxes(const std::array<bool, 6>& vec = {true, true, true, true, true, true}) : vec_(vec) {};
-    FreeAxes(const vector6d_t& vec) : 
+    BinaryArray(const std::array<bool, 6>& vec = {true, true, true, true, true, true}) : vec_(vec) {};
+    BinaryArray(const vector6d_t& vec) : 
     vec_(
       {vec[0] == 1.0 ? true : false, 
       vec[1] == 1.0 ? true : false,
@@ -263,8 +262,15 @@ public:
   bool
   writeFreedriveControlMessage(const FreedriveControlMessage freedrive_action,
                                const RobotReceiveTimeout& robot_receive_timeout = RobotReceiveTimeout::millisec(200),
-                               const FreeAxes& free_axes = FreeAxes(),
+                               const BinaryArray& free_axes = BinaryArray(),
                                const Feature& feature = Feature());
+
+  bool 
+  writeDynamicForceModeMessage(const vector6d_t& task_frame,
+                               const BinaryArray& compliance_vector,
+                               const vector6d_t& wrench,
+                               const RobotReceiveTimeout& robot_receive_timeout);
+
 
   /*!
    * \brief Set the Keepalive count. This will set the number of allowed timeout reads on the robot.
@@ -293,7 +299,7 @@ protected:
     return s;
   }
 
-  static const int MAX_MESSAGE_LENGTH = 11;
+  static const int MAX_MESSAGE_LENGTH = 15;
 
   std::function<void(bool)> handle_program_state_;
   std::chrono::milliseconds step_time_;

@@ -15,6 +15,11 @@ SERVO_UNINITIALIZED = -1
 SERVO_IDLE = 0
 SERVO_RUNNING = 1
 
+DYNAMIC_FORCE_MODE_UNINITIALIZED = -2
+DYNAMIC_FORCE_MODE_STOPPED = -1
+DYNAMIC_FORCE_MODE_READY = 0
+DYNAMIC_FORCE_MODE_RUNNING = 1
+
 MODE_STOPPED = -2
 MODE_UNINITIALIZED = -1
 MODE_IDLE = 0
@@ -25,8 +30,9 @@ MODE_SPEEDL = 4
 MODE_POSE = 5
 MODE_FREEDRIVE = 6
 MODE_TOOL_IN_CONTACT = 7
+MODE_DYNAMIC_FORCE_MODE = 8
 # Data dimensions of the message received on the reverse interface
-REVERSE_INTERFACE_DATA_DIMENSION = 11
+REVERSE_INTERFACE_DATA_DIMENSION = 15
 
 TRAJECTORY_MODE_RECEIVE = 1
 TRAJECTORY_MODE_CANCEL = -1
@@ -48,6 +54,7 @@ END_FORCE_MODE = 4
 START_TOOL_CONTACT = 5
 END_TOOL_CONTACT = 6
 SET_FORCE_MODE_PARAMS = 7
+SET_TCP_POSE_OFFSET = 8
 SCRIPT_COMMAND_DATA_DIMENSION = 28
 
 FREEDRIVE_MODE_START = 1
@@ -83,11 +90,47 @@ global spline_qdd = [0, 0, 0, 0, 0, 0]
 global spline_qd = [0, 0, 0, 0, 0, 0]
 global tool_contact_running = False
 global trajectory_result = 0
+global dynamic_force_mode_task_frame = get_actual_tcp_pose()
+global dynamic_force_mode_selection_vector = [0, 0, 0, 0, 0, 0]
+global dynamic_force_mode_wrench = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+# global dynamic_force_mode_force_type = 2
+global dynamic_force_mode_force_type = 1
+#global dynamic_force_mode_force_limits = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+# TODO(george): revert. for some reason, the values do not seem to be getting passed...
+global dynamic_force_mode_force_limits = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+global dynamic_force_mode_state = DYNAMIC_FORCE_MODE_UNINITIALIZED
+
+#task_frame, selection_vector, wrench, force_type, force_limits
 
 # Global thread variables
 thread_move = 0
 thread_trajectory = 0
 thread_script_commands = 0
+
+###
+# @brief Convert bit-packed vector into length=6 boolean array
+# @param val int 32-bit integer with bitwise true/false for 6 LSB's
+#
+# @returns array array of 6 elements of 0's and 1's
+###
+def int32To6ElementBinaryList(val):
+  # Initialize list of 6 elements
+  local binArray = [0, 0, 0, 0, 0, 0] 
+
+  # Convert int32 to list of binary elements
+  local binArrayL32 = integer_to_binary_list(val) 
+
+  # Loop across list and set enabled axes to 1
+  local i = 0
+  while i < 6:
+    if binArrayL32[i]:
+      binArray[i] = 1
+    end
+    i = i + 1
+  end
+
+  return binArray
+end
 
 ###
 # @brief Function to verify whether the specified target can be reached within the defined time frame while staying within
@@ -602,6 +645,47 @@ def set_servo_pose(pose):
   cmd_servo_q = get_inverse_kin(pose, cmd_servo_q)
 end
 
+thread dynamicForceModeThread():
+  textmsg("Starting dynamic force mode thread")
+  local i = 0
+  while control_mode == MODE_DYNAMIC_FORCE_MODE:
+    enter_critical
+    if dynamic_force_mode_state == DYNAMIC_FORCE_MODE_READY:
+      # Transition state to "running" if ready signal is applied
+      dynamic_force_mode_state = DYNAMIC_FORCE_MODE_RUNNING
+    end
+
+    if dynamic_force_mode_state == DYNAMIC_FORCE_MODE_RUNNING:
+      # Update force mode parameters
+      if i == 500:
+        textmsg("Task frame: ", dynamic_force_mode_task_frame)
+        textmsg("Compliance: ", dynamic_force_mode_selection_vector)
+        textmsg("Wrench: ", dynamic_force_mode_wrench)
+        textmsg("Type: ", dynamic_force_mode_force_type)
+        textmsg("Limits: ", dynamic_force_mode_force_limits)
+        i = 0
+      end
+      i = i + 1
+      force_mode(dynamic_force_mode_task_frame, dynamic_force_mode_selection_vector, dynamic_force_mode_wrench, dynamic_force_mode_force_type, dynamic_force_mode_force_limits)
+    end
+    sync()
+    exit_critical
+  end
+  textmsg("Ending dynamic force mode")
+end
+
+###
+# @brief Setter for dynamic force mode parameters
+# @param task_frame pose Task frame for force mode
+# @param selection_vector array selection_vector Array of 0's and 1's for compliance vector
+# @param wrench array wrench Active wrench to apply in force mode. [x,y,z,rx,ry,rz]
+###
+def set_dynamic_force_mode_params(task_frame, selection_vector, wrench):
+  dynamic_force_mode_task_frame = task_frame
+  dynamic_force_mode_selection_vector = selection_vector
+  #dynamic_force_mode_wrench = wrench
+end
+
 def tool_contact_detection():
   # Detect tool contact in the directions that the TCP is moving
   step_back = tool_contact(direction = get_actual_tcp_speed())
@@ -641,7 +725,8 @@ thread script_commands():
       elif command == SET_PAYLOAD:
         mass = raw_command[2] / MULT_jointstate
         cog = [raw_command[3] / MULT_jointstate, raw_command[4] / MULT_jointstate, raw_command[5] / MULT_jointstate]
-        set_payload(mass, cog)
+        inertia = [raw_command[6] / MULT_jointstate, raw_command[7] / MULT_jointstate, raw_command[8] / MULT_jointstate, raw_command[9] / MULT_jointstate, raw_command[10] / MULT_jointstate, raw_command[11] / MULT_jointstate]
+        set_target_payload(mass, cog)
       elif command == SET_TOOL_VOLTAGE:
         tool_voltage = raw_command[2] / MULT_jointstate
         set_tool_voltage(tool_voltage)
@@ -658,9 +743,29 @@ thread script_commands():
         if (get_steptime() < 0.008):
           force_mode_set_gain_scaling(raw_command[28] / MULT_jointstate)
         end
-        force_mode(task_frame, selection_vector, wrench, force_type, force_limits)
-        textmsg("Started force mode")
+        if control_mode == MODE_DYNAMIC_FORCE_MODE:
+          if dynamic_force_mode_state < DYNAMIC_FORCE_MODE_READY:
+            textmsg("Starting dynamic force mode")
+            set_dynamic_force_mode_params(task_frame, selection_vector, wrench)
+
+            # Set force type/limits here, as the main thread does not allow 
+            # force type/limits configurability while dynamic force mode is active
+            local dynamic_force_mode_force_type = force_type
+            local dynamic_force_mode_force_limits = force_limits
+
+            dynamic_force_mode_state = DYNAMIC_FORCE_MODE_READY
+          else:
+            textmsg("Dynamic force mode already started, end it or update in control loop")
+          end
+        else:
+          textmsg("Started standard force mode")
+          force_mode(task_frame, selection_vector, wrench, force_type, force_limits)
+        end
       elif command == END_FORCE_MODE:
+        if control_mode == MODE_DYNAMIC_FORCE_MODE:
+          # Set flag prior to prevent re-entering force mode
+          dynamic_force_mode_state = DYNAMIC_FORCE_MODE_STOPPED
+        end
         end_force_mode()
         textmsg("Ended force mode")
       elif command == START_TOOL_CONTACT:
@@ -681,6 +786,10 @@ thread script_commands():
           force_mode_set_gain_scaling(raw_command[3] / MULT_jointstate)
           textmsg("Gain scaling: ", raw_command[3] / MULT_jointstate)
         end
+      elif command == SET_TCP_POSE_OFFSET:
+        pose = p[raw_command[2] / MULT_jointstate, raw_command[3] / MULT_jointstate, raw_command[4] / MULT_jointstate, raw_command[5] / MULT_jointstate, raw_command[6] / MULT_jointstate, raw_command[7] / MULT_jointstate]
+        set_tcp(pose)
+        textmsg("Pose offset: ", pose)
       end
     end
   end
@@ -710,6 +819,8 @@ while control_mode > MODE_STOPPED:
     read_timeout = params_mult[1] / 1000.0 
 
     if control_mode != params_mult[REVERSE_INTERFACE_DATA_DIMENSION]:
+      # Change in control mode has been detected
+
       # Clear remaining trajectory points
       if control_mode == MODE_FORWARD:
         kill thread_trajectory
@@ -742,6 +853,8 @@ while control_mode > MODE_STOPPED:
         thread_move = run speedlThread()
       elif control_mode == MODE_POSE:
         thread_move = run servoThreadP()
+      elif control_mode == MODE_DYNAMIC_FORCE_MODE:
+        thread_move = run dynamicForceModeThread()
       end
     end
 
@@ -775,25 +888,13 @@ while control_mode > MODE_STOPPED:
       if params_mult[2] == FREEDRIVE_MODE_START:
         textmsg("Entering freedrive mode")
 
-        textmsg("Payload", params_mult)
-
         # TODO(george): version check to see if new enough to allow for custom
-        # freeAxes/feature inputs
-        
-        # Initialize list of 6 elements
-        local freeAxes = [0, 0, 0, 0, 0, 0] 
 
-        # Convert int32 to list of binary elements
-        local freeAxesBinList = integer_to_binary_list(params_mult[3]) 
+        ###########################
+        # freeAxes/feature inputs #
+        ###########################
 
-        # Loop across list and set enabled axes to 1
-        local freeAxesIndex = 0
-        while freeAxesIndex < 6:
-          if freeAxesBinList[freeAxesIndex]:
-            freeAxes[freeAxesIndex] = 1
-          end
-          freeAxesIndex = freeAxesIndex + 1
-        end
+        local freeAxes = int32To6ElementBinaryList(params_mult[3])
 
         textmsg("freeAxes: ", freeAxes)
 
@@ -821,7 +922,20 @@ while control_mode > MODE_STOPPED:
       elif params_mult[2] == FREEDRIVE_MODE_STOP:
         textmsg("Leaving freedrive mode")
         end_freedrive_mode()
+      else:
+        local freedrive_status = get_freedrive_status()
+        if freedrive_status == 1:
+          textmsg("Near singularity!")
+        elif freedrive_status == 2:
+          textmsg("Too close to singularity!")
+        end
       end
+    elif control_mode == MODE_DYNAMIC_FORCE_MODE:
+      # Update dynamic parameters
+      local task_frame = p[params_mult[2] / MULT_jointstate, params_mult[3] / MULT_jointstate, params_mult[4] / MULT_jointstate, params_mult[5] / MULT_jointstate, params_mult[6] / MULT_jointstate, params_mult[7] / MULT_jointstate]
+      local selection_vector = int32To6ElementBinaryList(params_mult[8])
+      local wrench = [params_mult[9] / MULT_jointstate, params_mult[10] / MULT_jointstate, params_mult[11] / MULT_jointstate, params_mult[12] / MULT_jointstate, params_mult[13] / MULT_jointstate, params_mult[14] / MULT_jointstate]
+      set_dynamic_force_mode_params(task_frame, selection_vector, wrench)
     end
     # Tool contact is running, but hasn't been detected
     if tool_contact_running == True and control_mode != MODE_TOOL_IN_CONTACT:

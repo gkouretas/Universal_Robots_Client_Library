@@ -160,10 +160,10 @@ bool ReverseInterface::writeTrajectoryControlMessage(const TrajectoryControlMess
 
 bool ReverseInterface::writeFreedriveControlMessage(const FreedriveControlMessage freedrive_action,
                                                     const RobotReceiveTimeout& robot_receive_timeout,
-                                                    const FreeAxes& free_axes,
+                                                    const BinaryArray& free_axes,
                                                     const Feature& feature)
 {
-  const int message_length = 11;
+  const int message_length = 10;
   if (client_fd_ == -1)
   {
     return false;
@@ -207,6 +207,7 @@ bool ReverseInterface::writeFreedriveControlMessage(const FreedriveControlMessag
   }
   else
   {
+    // Axes/feature are only read upon starting, so just set the data to zero
     for (size_t i = 0; i < free_axes.GetBufferInt32Length() + feature.GetBufferInt32Length(); ++i)
     {
       val = htobe32(0);
@@ -225,6 +226,79 @@ bool ReverseInterface::writeFreedriveControlMessage(const FreedriveControlMessag
   b_pos += append(b_pos, val);
 
   size_t written;
+
+  return server_.write(client_fd_, buffer, sizeof(buffer), written);
+}
+
+bool ReverseInterface::writeDynamicForceModeMessage(const vector6d_t& task_frame,
+                                                    const BinaryArray& compliance_vector,
+                                                    const vector6d_t& wrench,
+                                                    const RobotReceiveTimeout& robot_receive_timeout)
+{
+  const int message_length = 15;
+  if (client_fd_ == -1)
+  {
+    return false;
+  }
+  uint8_t buffer[sizeof(int32_t) * MAX_MESSAGE_LENGTH];
+  uint8_t* b_pos = buffer;
+
+  int read_timeout = robot_receive_timeout.verifyRobotReceiveTimeout(comm::ControlMode::MODE_DYNAMIC_FORCE_MODE, step_time_);
+
+  // This can be removed once we remove the setkeepAliveCount() method
+  auto read_timeout_resolved = read_timeout;
+  if (keep_alive_count_modified_deprecated_)
+  {
+    // Translate keep alive count into read timeout. 20 milliseconds was the "old read timeout"
+    read_timeout_resolved = 20 * keepalive_count_;
+  }
+
+  // The first element is always the read timeout.
+  int32_t val = read_timeout_resolved;
+  val = htobe32(val);
+  b_pos += append(b_pos, val);
+
+  // Dynamic task frame
+  for (auto& frame_component : task_frame)
+  {
+    val = htobe32(static_cast<int32_t>(round(frame_component * MULT_JOINTSTATE)));
+    b_pos += append(b_pos, val);
+  }
+
+  // Compliance vector
+  val = htobe32(compliance_vector.ToS32Buffer());
+  b_pos += append(b_pos, val);
+
+  // Wrench
+  for (auto& wrench_component : wrench)
+  {
+    val = htobe32(static_cast<int32_t>(round(wrench_component * MULT_JOINTSTATE)));
+    b_pos += append(b_pos, val);
+  }
+
+  // writing zeros to allow usage with other script commands
+  for (size_t i = message_length; i < MAX_MESSAGE_LENGTH - 1; i++)
+  {
+    val = htobe32(0);
+    b_pos += append(b_pos, val);
+  }
+
+  val = htobe32(toUnderlying(comm::ControlMode::MODE_DYNAMIC_FORCE_MODE));
+  b_pos += append(b_pos, val);
+
+  size_t written;
+
+  static bool logged = false;
+  if (!logged)
+  {
+    URCL_LOG_INFO("%ld", toUnderlying(comm::ControlMode::MODE_DYNAMIC_FORCE_MODE));
+    URCL_LOG_INFO("Packet:");
+    for (size_t i = 0; i < MAX_MESSAGE_LENGTH; ++i)
+    {
+      URCL_LOG_INFO("%ld", ((uint32_t *)buffer)[i]);
+    }
+    logged = true;
+  }
 
   return server_.write(client_fd_, buffer, sizeof(buffer), written);
 }

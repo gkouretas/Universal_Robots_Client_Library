@@ -335,8 +335,14 @@ public:
    */
   bool
   writeFreedriveControlMessage(const control::FreedriveControlMessage freedrive_action,
-                               const control::ReverseInterface::FreeAxes& free_axes = control::ReverseInterface::FreeAxes(),
+                               const control::ReverseInterface::BinaryArray& free_axes = control::ReverseInterface::BinaryArray(),
                                const control::ReverseInterface::Feature& feature = control::ReverseInterface::Feature(),
+                               const RobotReceiveTimeout& robot_receive_timeout = RobotReceiveTimeout::millisec(200));
+
+  bool
+  writeDynamicForceModeMessage(const vector6d_t& task_frame,
+                               const control::ReverseInterface::BinaryArray& compliance_vector,
+                               const vector6d_t& wrench,
                                const RobotReceiveTimeout& robot_receive_timeout = RobotReceiveTimeout::millisec(200));
 
   /*!
@@ -364,10 +370,21 @@ public:
    * \param mass mass in kilograms
    * \param cog Center of Gravity, a vector [CoGx, CoGy, CoGz] specifying the displacement (in meters) from the
    * toolmount
+   * \param inertia Inertia matrix, a vector [Ixx, Iyy, Izz, Ixy, Ixz, Iyz] with origin in the CoG and the axes 
+   * aligned with the tool flange axes.
    *
    * \returns True on successful write.
    */
-  bool setPayload(const float mass, const vector3d_t& cog);
+  bool setPayload(const float mass, const vector3d_t& cog, const vector6d_t& inertia);
+
+  /*!
+   * \brief Set the TCP pose offset.
+   *
+   * \param tcp_pose_offset TCP pose offset, a vector [x, y, z, rx, ry, rz]
+   * 
+   * \returns True on successful write.
+   */
+  bool setTCPPoseOffset(const vector6d_t& tcp_pose_offset);
 
   /*!
    * \brief Set the tool voltage. Note: It requires the external control script to be running or the robot to be in
